@@ -22,7 +22,6 @@ button.addEventListener("click", () => {
 });
 
 reset.addEventListener("click", () => {
-  season.value = "";
   while (teamDiv.hasChildNodes()) {
     teamDiv.removeChild(teamDiv.firstChild);
   }
@@ -150,4 +149,6 @@ async function getRosterData(passedFunc, year, teamId, divId) {
   }
 
   passedFunc(results, divId);
+
+  season.value = "";
 }
