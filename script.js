@@ -149,6 +149,4 @@ async function getRosterData(passedFunc, year, teamId, divId) {
   }
 
   passedFunc(results, divId);
-
-  season.value = "";
 }
