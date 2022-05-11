@@ -47,11 +47,15 @@ button.addEventListener("click", () => {
     document.getElementsByClassName("team").length === 0 ||
     season.value !== ""
   ) {
-    if (!isNaN(Number(season.value))) {
+    if (
+      !isNaN(Number(season.value)) &&
+      Number(season.value) >= 1876 &&
+      Number(season.value) <= new Date().getFullYear()
+    ) {
       getTeamData(showList, season.value);
     } else {
       season.value = "";
-      alert("Please Enter a Year!");
+      alert("Please Enter a Valid Year!");
     }
     // add to search history
     if (
@@ -305,3 +309,5 @@ async function getPlayerInfo(playerId) {
 
   modalBody.appendChild(paragraph);
 }
+
+console.log(2022 == new Date().getFullYear());
