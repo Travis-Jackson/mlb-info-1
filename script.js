@@ -54,7 +54,10 @@ button.addEventListener("click", () => {
     ) {
       getTeamData(showList, season.value);
     } else {
-      season.value = "";
+      yearPre = history[history.length - 1].split(">")[1];
+      year = yearPre.split("<")[0];
+      season.value = year;
+      button.click();
       alert("Please Enter a Valid Year!");
     }
     // add to search history
