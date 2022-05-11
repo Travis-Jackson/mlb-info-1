@@ -6,8 +6,10 @@ const season = document.getElementById("season");
 const buttonDiv = document.getElementById("buttons");
 // get teams
 const button = document.createElement("button");
+button.setAttribute("class", "main-btn");
 
 const reset = document.createElement("button");
+reset.setAttribute("class", "main-btn");
 
 button.innerText = "Get Teams";
 reset.innerText = "Reset";
@@ -42,12 +44,21 @@ button.addEventListener("click", () => {
   // check if the same year is being searched repeatedly
   if (
     year !== season.value ||
-    document.getElementsByClassName("team").length === 0
+    document.getElementsByClassName("team").length === 0 ||
+    season.value !== ""
   ) {
-    getTeamData(showList, season.value);
-
+    if (!isNaN(Number(season.value))) {
+      getTeamData(showList, season.value);
+    } else {
+      season.value = "";
+      alert("Please Enter a Year!");
+    }
     // add to search history
-    if (history[history.length - 1] !== `<a href="#">${season.value}</a>`) {
+    if (
+      history[history.length - 1] !== `<a href="#">${season.value}</a>` &&
+      season.value !== "" &&
+      !isNaN(Number(season.value))
+    ) {
       history.push(`<a href="#">${season.value}</a>`);
       console.log(history);
       historyPara.innerHTML = history;
@@ -72,6 +83,13 @@ reset.addEventListener("click", () => {
   }
 });
 
+// add event listener to press get teams button when the user presses enter
+season.addEventListener("keypress", (event) => {
+  if (event.key === "Enter") {
+    button.click();
+  }
+});
+
 // creates elements and displays them
 function showList(array) {
   for (let i = 0; i < array.length; i++) {
@@ -82,16 +100,27 @@ function showList(array) {
 
     const hrElem = document.createElement("hr");
     const teamName = document.createElement("h4");
+    teamName.setAttribute("class", "team-name");
+
     const teamVenue = document.createElement("p");
+
+    const teamLeague = document.createElement("p");
+    const teamFirstPlayed = document.createElement("p");
 
     teamName.innerText = array[i]["name_display_full"];
     teamVenue.innerText = "Venue: " + array[i]["venue_name"];
+    teamLeague.innerText = "League: " + array[i]["league"];
+    teamFirstPlayed.innerText =
+      "First Year Played: " + array[i]["first_year_of_play"];
 
     teamDataDiv.appendChild(teamName);
     teamDataDiv.appendChild(teamVenue);
+    teamDataDiv.appendChild(teamLeague);
+    teamDataDiv.appendChild(teamFirstPlayed);
 
     const showRosterButton = document.createElement("button");
     showRosterButton.setAttribute("id", "btn-" + array[i]["team_id"]);
+    showRosterButton.setAttribute("class", "roster-btn");
     showRosterButton.innerText = "Show Roster";
     teamDataDiv.appendChild(showRosterButton);
 
@@ -100,16 +129,15 @@ function showList(array) {
       const teamId = teamDataDiv.id.split("-")[1];
       // prevent more than one click
       showRosterButton.disabled = true;
-      
+
       // prevent more than one roster table
       if (document.getElementById(teamDataDiv.id + "-table") !== null) {
         return;
-      } 
+      }
 
       getRosterData(showRoster, season.value, teamId, teamDataDiv.id);
-     
     });
-    
+
     if (i !== array.length - 1) {
       teamDataDiv.appendChild(hrElem);
     }
@@ -136,17 +164,16 @@ async function getTeamData(passedFunc, year) {
 }
 
 function showRoster(array, divId) {
-
   const parentDiv = document.getElementById(divId);
-  
-  const rosterTable = document.createElement("table");
-  rosterTable.setAttribute("id", divId + "-table");
-                           
-  parentDiv.appendChild(rosterTable);
 
   const hbDiv = document.createElement("div");
   hbDiv.setAttribute("class", "hide");
-  rosterTable.appendChild(hbDiv);
+  parentDiv.appendChild(hbDiv);
+
+  const rosterTable = document.createElement("table");
+  rosterTable.setAttribute("id", divId + "-table");
+
+  parentDiv.appendChild(rosterTable);
 
   const hideTableButton = document.createElement("button");
   hideTableButton.setAttribute("class", "hideBtn");
@@ -159,7 +186,8 @@ function showRoster(array, divId) {
       rosterTable.removeChild(rosterTable.firstChild);
     }
 
-    rosterTable.remove();  
+    rosterTable.remove();
+    hideTableButton.remove();
     // re-enable button
     document.getElementById("btn-" + divId.split("-")[1]).disabled = false;
   });
@@ -191,11 +219,27 @@ function showRoster(array, divId) {
     nameTd.innerText = array[i]["name_first_last"];
 
     const positionTd = document.createElement("td");
-    positionTd.innerText = array[i]["position_desig"];
+    positionTd.innerText =
+      array[i]["position_desig"].charAt(0) +
+      array[i]["position_desig"].substring(1).toLowerCase();
+
+    const buttonTd = document.createElement("td");
+    const icon = document.createElement("i");
+    icon.setAttribute("class", "fa-solid fa-info");
+    buttonTd.appendChild(icon);
+
+    // select button that opens modal
+    const playerInfoButton = document.getElementById("modal-btn");
+    // add event listener to the icon to open the modal
+    icon.addEventListener("click", () => {
+      getPlayerInfo(array[i]["player_id"]);
+      playerInfoButton.click();
+    });
 
     playerRow.appendChild(numberTd);
     playerRow.appendChild(nameTd);
     playerRow.appendChild(positionTd);
+    playerRow.appendChild(buttonTd);
   }
 }
 
@@ -203,13 +247,61 @@ async function getRosterData(passedFunc, year, teamId, divId) {
   const url = `https://lookup-service-prod.mlb.com/json/named.roster_team_alltime.bam?start_season=${year}&end_season=${year}&team_id=${teamId}`;
   const response = await fetch(url, { method: "GET" });
   const data = await response.json();
-  const results = data["roster_team_alltime"]["queryResults"]["row"]; 
- 
+  const results = data["roster_team_alltime"]["queryResults"]["row"];
+
+  console.log(results);
+
   if (results === undefined) {
     alert("Roster Not Available!");
   }
-  
+
   passedFunc(results, divId);
 }
 
-// new stuff!!
+// make AJAX call and create a paragraph filled with player info, then diplay in modal
+async function getPlayerInfo(playerId) {
+  // let playerId = "493316";
+  const url = `https://lookup-service-prod.mlb.com/json/named.player_info.bam?sport_code='mlb'&player_id=${playerId}`;
+  const response = await fetch(url, { method: "GET" });
+  const data = await response.json();
+  const player = data["player_info"]["queryResults"]["row"];
+
+  console.log(player);
+
+  // select modal body
+  const modalBody = document.getElementsByClassName("modal-body")[0];
+
+  while (modalBody.hasChildNodes()) {
+    modalBody.removeChild(modalBody.firstChild);
+  }
+
+  let playerNum = player["jersey_number"];
+  if (playerNum !== "") {
+    playerNum = "<span class='bold'>#" + playerNum + "</span>";
+  }
+
+  // set title to player name
+  const playerName = document.getElementById("exampleModalLabel");
+  playerName.innerHTML =
+    player["name_display_first_last"] + "&emsp;&emsp;&emsp;" + playerNum;
+
+  // create paragraph
+  const paragraph = document.createElement("p");
+
+  // use span tags to set css to bold
+  paragraph.innerHTML =
+    "<span class='bold'>Team: </span>" +
+    player["team_name"] +
+    "<br/><span class='bold'>Country:</span> " +
+    player["birth_country"] +
+    " <span class='bold'>Birth Date:</span> " +
+    player["birth_date"].split("T")[0] +
+    "<br/><span class='bold'>Throws:</span> " +
+    player["throws"] +
+    " <span class='bold'>Bats:</span> " +
+    player["bats"] +
+    "<br/><span class='bold'>Pro Debut:</span> " +
+    player["pro_debut_date"].split("T")[0];
+
+  modalBody.appendChild(paragraph);
+}
