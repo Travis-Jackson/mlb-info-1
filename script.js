@@ -261,13 +261,20 @@ async function getRosterData(passedFunc, year, teamId, divId) {
   if (results === undefined) {
     alert("Roster Not Available!");
   }
-
+  
   passedFunc(results, divId);
 }
 
 // make AJAX call and create a paragraph filled with player info, then diplay in modal
 async function getPlayerInfo(playerId) {
-  // let playerId = "493316";
+
+  // select modal body
+  const modalBody = document.getElementsByClassName("modal-body")[0];
+  
+  while (modalBody.hasChildNodes()) {
+    modalBody.removeChild(modalBody.firstChild);
+  }
+
   const url = `https://lookup-service-prod.mlb.com/json/named.player_info.bam?sport_code='mlb'&player_id=${playerId}`;
   const response = await fetch(url, { method: "GET" });
   const data = await response.json();
@@ -275,12 +282,6 @@ async function getPlayerInfo(playerId) {
 
   console.log(player);
 
-  // select modal body
-  const modalBody = document.getElementsByClassName("modal-body")[0];
-
-  while (modalBody.hasChildNodes()) {
-    modalBody.removeChild(modalBody.firstChild);
-  }
 
   let playerNum = player["jersey_number"];
   if (playerNum !== "") {
